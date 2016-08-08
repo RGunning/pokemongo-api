@@ -473,7 +473,7 @@ class PogoSession(PogoSessionBare):
             raise GeneralPogoException("Location not set")
 
         # Calculate distance to position
-        latitude, longitude, _ = self.getCoordinates()
+        latitude, longitude, _ = session.getCoordinates()
         dist = closest = Location.getDistance(
             latitude,
             longitude,

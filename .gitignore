@@ -3,3 +3,8 @@ dumps
 venv
 libencrypt.so
 encrypt.dll
+*.xml
+
+*.iml
+
+pogo/rjgunning.py

@@ -209,13 +209,13 @@ class Pokedex(dict):
             self.BULBASAUR, self.ARBOK, self.ABRA
         ]
         self.rarity[Rarity.COMMON] = [
-            self.WEEDLE, self.VOLTORB, self.VENONAT, self.SLOWPOKE, self.SANDSHREW,
+            self.VOLTORB, self.VENONAT, self.SLOWPOKE, self.SANDSHREW,
             self.POLIWAG, self.PARAS, self.ODDISH, self.NIDORAN_MALE, self.NIDORAN_FEMALE,
             self.MEOWTH, self.MANKEY, self.MAGNEMITE, self.MAGIKARP, self.MACHOP, self.KRABBY,
             self.GOLDEEN, self.GEODUDE, self.GASTLY, self.EEVEE, self.EKANS, self.DROWZEE,
             self.DODUO, self.DIGLETT, self.CATERPIE, self.BELLSPROUT
         ]
-        self.rarity[Rarity.CRITTER] = [self.ZUBAT, self.PIDGEY, self.RATTATA]
+        self.rarity[Rarity.CRITTER] = [self.ZUBAT, self.PIDGEY, self.RATTATA, self.WEEDLE,]
 
         self.evolves = {
             self.MISSINGNO: 0, self.BULBASAUR: 25, self.IVYSAUR: 100, self.VENUSAUR: 0,

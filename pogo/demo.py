@@ -11,6 +11,8 @@ from location import Location
 from pokedex import pokedex
 from inventory import items
 
+from collections import defaultdict, Counter
+
 def setupLogger():
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -260,13 +262,19 @@ def setEgg(session):
 def cleanPokemon(session, thresholdCP=50):
     logging.info("Cleaning out Pokemon...")
     party = session.checkInventory().party
-    evolables = [pokedex.PIDGEY, pokedex.RATTATA, pokedex.ZUBAT]
+    evolables = [pokedex.PIDGEY, pokedex.WEEDLE, pokedex.RATTATA, pokedex.ZUBAT]
     toEvolve = {evolve: [] for evolve in evolables}
+
+    #Aim for 1 of each pokemon
+    pokemoncount = Counter(pokemon.pokemon_id for pokemon in party)
+    party = sorted(party,
+                     key=lambda k: (k.individual_attack + k.individual_defense + k.individual_stamina) * 100 / 45)
     for pokemon in party:
-        # If low cp, throw away
-        if pokemon.cp < thresholdCP:
-            # It makes more sense to evolve some,
-            # than throw away
+        #calculate IV
+        IV = (pokemon.individual_attack + pokemon.individual_defense + pokemon.individual_stamina) * 100 / 45
+        # If low cp, not unique and low IV throw away
+        if (pokemon.cp < thresholdCP) & (IV < 75) & (pokemoncount[pokemon.pokemon_id] > 1):
+            # It makes more sense to evolve some, than throw away
             if pokemon.pokemon_id in evolables:
                 toEvolve[pokemon.pokemon_id].append(pokemon)
                 continue
@@ -305,7 +313,7 @@ def cleanInventory(session):
     bag = session.checkInventory().bag
 
     # Clear out all of a crtain type
-    tossable = [items.POTION, items.SUPER_POTION, items.REVIVE]
+    tossable = [items.POTION]
     for toss in tossable:
         if toss in bag and bag[toss]:
             session.recycleItem(toss, bag[toss])
@@ -315,7 +323,9 @@ def cleanInventory(session):
         items.POKE_BALL: 50,
         items.GREAT_BALL: 100,
         items.ULTRA_BALL: 150,
-        items.RAZZ_BERRY: 25
+        items.RAZZ_BERRY: 25,
+        items.SUPER_POTION: 20,
+        items.REVIVE: 25
     }
     for limit in limited:
         if limit in bag and bag[limit] > limited[limit]:
@@ -330,13 +340,13 @@ def simpleBot(session):
     # Run the bot
     while True:
         forts = sortCloseForts(session)
-        cleanPokemon(session, thresholdCP=300)
+        cleanPokemon(session, thresholdCP=50)
         cleanInventory(session)
         try:
             for fort in forts:
+                walkAndSpin(session, fort)
                 pokemon = findBestPokemon(session)
                 walkAndCatch(session, pokemon)
-                walkAndSpin(session, fort)
                 cooldown = 1
                 time.sleep(1)
 
