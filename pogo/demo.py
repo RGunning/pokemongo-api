@@ -363,6 +363,58 @@ def simpleBot(session):
             time.sleep(cooldown)
             cooldown *= 2
 
+def changeLocation(session, location, speed = 9):
+    new_location = Location(location, None)
+    session.walkTo(new_location.latitude, new_location.longitude, step=speed)
+
+
+def catchAtLocation(session, lat, long):
+    session.walkTo(lat, long, step=3.2)
+    demo.walkAndCatch(session, demo.findBestPokemon(session))
+
+# Basic bot
+def BotandEgg(session):
+    # Trying not to flood the servers
+    cooldown = 1
+    # Run the bot
+    while True:
+        forts = demo.sortCloseForts(session)
+        demo.cleanPokemon(session, thresholdCP=200)
+        demo.cleanInventory(session)
+        try:
+            for fort in forts:
+                inventory = session.checkInventory()
+                for incubator in inventory.incubators:
+                    if not incubator.pokemon_id:
+                        logging.info('Incubating a new Egg')
+                        demo.setEgg(session)
+                While True:
+                    pokemon = demo.findBestPokemon(session)
+                    if not pokemon:
+                        break
+                    demo.walkAndCatch(session, pokemon)
+                    time.sleep(10)
+                demo.walkAndSpin(session, fort)
+                time.sleep(10)
+                cooldown = 1
+                time.sleep(1)
+            if len(forts) == 0:
+                time.sleep(cooldown)
+                cooldown *= 2
+            else:
+                time.sleep(1)
+                cooldown = 1
+        # Catch problems and reauthenticate
+        except GeneralPogoException as e:
+            logging.critical('GeneralPogoException raised: %s', e)
+            session = poko_session.reauthenticate(session)
+            time.sleep(cooldown)
+            cooldown *= 2
+        except Exception as e:
+            logging.critical('Exception raised: %s', e)
+            session = poko_session.reauthenticate(session)
+            time.sleep(cooldown)
+            cooldown *= 2
 
 # Entry point
 # Start off authentication and demo
@@ -372,10 +424,10 @@ if __name__ == '__main__':
 
     # Read in args
     parser = argparse.ArgumentParser()
-    parser.add_argument("-a", "--auth", help="Auth Service", required=True)
+    parser.add_argument("-a", "--auth", help="Auth Service", default="google")
     parser.add_argument("-u", "--username", help="Username", required=True)
     parser.add_argument("-p", "--password", help="Password", required=True)
-    parser.add_argument("-e", "--encrypt_lib", help="Encryption Library")
+    parser.add_argument("-e", "--encrypt_lib", help="Encryption Library",default="../pgoencrypt/src/libencrypt.so")
     parser.add_argument("-g", "--geo_key", help="GEO API Secret")
     parser.add_argument("-l", "--location", help="Location")
     args = parser.parse_args()
@@ -411,17 +463,19 @@ if __name__ == '__main__':
         # General
         getProfile(session)
         getInventory(session)
+        time.sleep(10)
 
         # Things we need GPS for
         if args.location:
             # Pokemon related
-            pokemon = findBestPokemon(session)
-            walkAndCatch(session, pokemon)
+            #pokemon = findBestPokemon(session)
+            #walkAndCatch(session, pokemon)
 
             # Pokestop related
-            fort = findClosestFort(session)
-            walkAndSpin(session, fort)
+            #fort = findClosestFort(session)
+            #walkAndSpin(session, fort)
 
+            BotandEgg(session)
         # see simpleBot() for logical usecases
         # eg. simpleBot(session)
 

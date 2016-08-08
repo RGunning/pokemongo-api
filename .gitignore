@@ -8,3 +8,7 @@ encrypt.dll
 *.iml
 
 pogo/rjgunning.py
+
+*.gz
+
+pgoencrypt/
