@@ -1,17 +1,16 @@
 #!/usr/bin/python
 import argparse
 import logging
-import time
 import sys
-from custom_exceptions import GeneralPogoException
+import time
+from collections import Counter
 
 from api import PokeAuthSession
-from location import Location
-
-from pokedex import pokedex
+from custom_exceptions import GeneralPogoException
 from inventory import items
+from location import Location
+from pokedex import pokedex
 
-from collections import defaultdict, Counter
 
 def setupLogger():
     logger = logging.getLogger()
@@ -26,9 +25,10 @@ def setupLogger():
 # Example functions
 # Get profile
 def getProfile(session):
-        logging.info("Printing Profile:")
-        profile = session.getProfile()
-        logging.info(profile)
+    time.sleep(10)
+    logging.info("Printing Profile:")
+    profile = session.getProfile()
+    logging.info(profile)
 
 
 def setNickname(session):
@@ -40,7 +40,7 @@ def setNickname(session):
 def findBestPokemon(session):
     # Get Map details and print pokemon
     logging.info("Finding Nearby Pokemon:")
-    cells = session.getMapObjects()
+    cells = session.getMapObjects(radius=20)
     closest = float("Inf")
     best = -1
     pokemonBest = None
@@ -95,7 +95,7 @@ def encounterAndCatch(session, pokemon, thresholdP=0.5, limit=5, delay=2):
     # Have we used a razz berry yet?
     berried = False
 
-    # Make sure we aren't oer limit
+    # Make sure we aren't over limit
     count = 0
 
     # Attempt catch
@@ -142,7 +142,7 @@ def encounterAndCatch(session, pokemon, thresholdP=0.5, limit=5, delay=2):
             if count == 0:
                 logging.info("Possible soft ban.")
             else:
-                logging.info("Pokemon fleed at %dth attempt" % (count + 1))
+                logging.info("Pokemon fled at %dth attempt" % (count + 1))
             return attempt
 
         # Only try up to x attempts
@@ -162,6 +162,7 @@ def walkAndCatch(session, pokemon):
 
 # Do Inventory stuff
 def getInventory(session):
+    time.sleep(10)
     logging.info("Get Inventory:")
     logging.info(session.getInventory())
 
@@ -171,6 +172,7 @@ def getInventory(session):
 # true solution. But at least you get
 # those step in
 def sortCloseForts(session):
+    time.sleep(10)
     # Sort nearest forts (pokestop)
     logging.info("Sorting Nearest Forts:")
     cells = session.getMapObjects()
@@ -184,7 +186,7 @@ def sortCloseForts(session):
                 fort.latitude,
                 fort.longitude
             )
-            if fort.type == 1 and fort.cooldown_complete_timestamp_ms<time.time():
+            if fort.type == 1 and fort.cooldown_complete_timestamp_ms < time.time():
                 ordered_forts.append({'distance': dist, 'fort': fort})
 
     ordered_forts = sorted(ordered_forts, key=lambda k: k['distance'])
@@ -260,17 +262,18 @@ def setEgg(session):
 # Understand this function before you run it.
 # Otherwise you may flush pokemon you wanted.
 def cleanPokemon(session, thresholdCP=50):
+    time.sleep(10)
     logging.info("Cleaning out Pokemon...")
     party = session.checkInventory().party
     evolables = [pokedex.PIDGEY, pokedex.WEEDLE, pokedex.RATTATA, pokedex.ZUBAT]
     toEvolve = {evolve: [] for evolve in evolables}
 
-    #Aim for 1 of each pokemon
+    # Aim for 1 of each pokemon
     pokemoncount = Counter(pokemon.pokemon_id for pokemon in party)
     party = sorted(party,
-                     key=lambda k: (k.individual_attack + k.individual_defense + k.individual_stamina) * 100 / 45)
+                   key=lambda k: (k.individual_attack + k.individual_defense + k.individual_stamina) * 100 / 45)
     for pokemon in party:
-        #calculate IV
+        # calculate IV
         IV = (pokemon.individual_attack + pokemon.individual_defense + pokemon.individual_stamina) * 100 / 45
         # If low cp, not unique and low IV throw away
         if (pokemon.cp < thresholdCP) & (IV < 75) & (pokemoncount[pokemon.pokemon_id] > 1):
@@ -309,6 +312,7 @@ def cleanPokemon(session, thresholdCP=50):
 
 
 def cleanInventory(session):
+    time.sleep(10)
     logging.info("Cleaning out Inventory...")
     bag = session.checkInventory().bag
 
@@ -317,13 +321,14 @@ def cleanInventory(session):
     for toss in tossable:
         if toss in bag and bag[toss]:
             session.recycleItem(toss, bag[toss])
+            time.sleep(2)
 
     # Limit a certain type
     limited = {
-        items.POKE_BALL: 50,
+        items.POKE_BALL: 25,
         items.GREAT_BALL: 100,
         items.ULTRA_BALL: 150,
-        items.RAZZ_BERRY: 25,
+        items.RAZZ_BERRY: 15,
         items.SUPER_POTION: 20,
         items.REVIVE: 25
     }
@@ -363,14 +368,16 @@ def simpleBot(session):
             time.sleep(cooldown)
             cooldown *= 2
 
-def changeLocation(session, location, speed = 9):
+
+def changeLocation(session, location, speed=9):
     new_location = Location(location, None)
     session.walkTo(new_location.latitude, new_location.longitude, step=speed)
 
 
 def catchAtLocation(session, lat, long):
     session.walkTo(lat, long, step=3.2)
-    demo.walkAndCatch(session, demo.findBestPokemon(session))
+    walkAndCatch(session, findBestPokemon(session))
+
 
 # Basic bot
 def BotandEgg(session):
@@ -378,31 +385,30 @@ def BotandEgg(session):
     cooldown = 1
     # Run the bot
     while True:
-        forts = demo.sortCloseForts(session)
-        demo.cleanPokemon(session, thresholdCP=200)
-        demo.cleanInventory(session)
+        forts = sortCloseForts(session)
+        cleanPokemon(session, thresholdCP=200)
+        cleanInventory(session)
         try:
             for fort in forts:
                 inventory = session.checkInventory()
                 for incubator in inventory.incubators:
                     if not incubator.pokemon_id:
                         logging.info('Incubating a new Egg')
-                        demo.setEgg(session)
-                While True:
-                    pokemon = demo.findBestPokemon(session)
+                        setEgg(session)
+                while True:
+                    pokemon = findBestPokemon(session)
                     if not pokemon:
                         break
-                    demo.walkAndCatch(session, pokemon)
+                    walkAndCatch(session, pokemon)
                     time.sleep(10)
-                demo.walkAndSpin(session, fort)
+                walkAndSpin(session, fort)
                 time.sleep(10)
                 cooldown = 1
-                time.sleep(1)
             if len(forts) == 0:
                 time.sleep(cooldown)
                 cooldown *= 2
             else:
-                time.sleep(1)
+                time.sleep(10)
                 cooldown = 1
         # Catch problems and reauthenticate
         except GeneralPogoException as e:
@@ -416,6 +422,7 @@ def BotandEgg(session):
             time.sleep(cooldown)
             cooldown *= 2
 
+
 # Entry point
 # Start off authentication and demo
 if __name__ == '__main__':
@@ -427,7 +434,7 @@ if __name__ == '__main__':
     parser.add_argument("-a", "--auth", help="Auth Service", default="google")
     parser.add_argument("-u", "--username", help="Username", required=True)
     parser.add_argument("-p", "--password", help="Password", required=True)
-    parser.add_argument("-e", "--encrypt_lib", help="Encryption Library",default="../pgoencrypt/src/libencrypt.so")
+    parser.add_argument("-e", "--encrypt_lib", help="Encryption Library", default="../pgoencrypt/src/libencrypt.so")
     parser.add_argument("-g", "--geo_key", help="GEO API Secret")
     parser.add_argument("-l", "--location", help="Location")
     args = parser.parse_args()
@@ -457,27 +464,27 @@ if __name__ == '__main__':
     # Time to show off what we can do
     if session:
 
-    	# wait for a second to prevent GeneralPogoException
-        time.sleep(1)
+        # wait for a second to prevent GeneralPogoException
+        time.sleep(2)
 
         # General
-        getProfile(session)
-        getInventory(session)
+        # getProfile(session)
+        # getInventory(session)
         time.sleep(10)
 
         # Things we need GPS for
         if args.location:
             # Pokemon related
-            #pokemon = findBestPokemon(session)
-            #walkAndCatch(session, pokemon)
+            # pokemon = findBestPokemon(session)
+            # walkAndCatch(session, pokemon)
 
             # Pokestop related
-            #fort = findClosestFort(session)
-            #walkAndSpin(session, fort)
+            # fort = findClosestFort(session)
+            # walkAndSpin(session, fort)
 
             BotandEgg(session)
-        # see simpleBot() for logical usecases
-        # eg. simpleBot(session)
+            # see simpleBot() for logical usecases
+            # eg. simpleBot(session)
 
     else:
         logging.critical('Session not created successfully')
